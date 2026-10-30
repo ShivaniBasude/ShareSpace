@@ -1,0 +1,2 @@
+// Application Routing placeholder
+export {};

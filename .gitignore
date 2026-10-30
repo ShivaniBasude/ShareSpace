@@ -1,0 +1,45 @@
+# Logs
+logs
+*.log
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+pnpm-debug.log*
+lerna-debug.log*
+firebase-debug.log*
+firestore-debug.log*
+ui-debug.log*
+pubsub-debug.log*
+
+# Node dependencies
+node_modules
+functions/node_modules
+
+# Build outputs
+dist
+dist-ssr
+functions/lib
+
+# Environment and local configs
+.env
+.env.local
+.env.*.local
+*.local
+
+# Firebase
+.firebase/
+*-credentials.json
+*service-account*.json
+emulator-data/
+.runtimeconfig.json
+
+# Editor directories and files
+.vscode/*
+!.vscode/extensions.json
+.idea
+.DS_Store
+*.suo
+*.ntvs*
+*.njsproj
+*.sln
+*.sw?

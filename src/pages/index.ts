@@ -1,0 +1,2 @@
+// Application Pages placeholder
+export {};

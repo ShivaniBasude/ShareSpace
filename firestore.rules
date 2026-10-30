@@ -1,0 +1,51 @@
+rules_version = '2';
+service cloud.firestore {
+  match /databases/{database}/documents {
+
+    // Helper functions
+    function isAuthenticated() {
+      return request.auth != null;
+    }
+
+    function isOwner(userId) {
+      return isAuthenticated() && request.auth.uid == userId;
+    }
+
+    // Default: Deny all reads and writes until specific collection rules are implemented
+    match /{document=**} {
+      allow read, write: if false;
+    }
+
+    // Planned collection match blocks (Backend Developer will implement logic)
+    match /users/{userId} {
+      allow read: if isAuthenticated();
+      allow write: if isOwner(userId);
+    }
+
+    match /resources/{resourceId} {
+      allow read: if isAuthenticated();
+      allow write: if false; // Managed via admin / Cloud Functions
+    }
+
+    match /bookings/{bookingId} {
+      allow read, write: if isAuthenticated();
+    }
+
+    match /approvals/{approvalId} {
+      allow read, write: if isAuthenticated();
+    }
+
+    match /incidents/{incidentId} {
+      allow read, write: if isAuthenticated();
+    }
+
+    match /notifications/{notificationId} {
+      allow read, write: if isAuthenticated();
+    }
+
+    match /audit_logs/{logId} {
+      allow read: if isAuthenticated();
+      allow write: if false; // Cloud Functions only
+    }
+  }
+}
