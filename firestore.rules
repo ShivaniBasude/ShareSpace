@@ -74,8 +74,26 @@ service cloud.firestore {
 
     // Placeholders for subsequent phases (Phase 2+)
     match /resources/{resourceId} {
-      allow read: if isCallerActive();
-      allow write: if false;
+      // Read allowed for active users belonging to the same institution,
+      // institution managers, or admins.
+      allow read: if isCallerActive() && (
+        resource.data.institutionId == request.auth.token.institutionId ||
+        isAdmin() ||
+        isInstitutionManager(resource.data.institutionId)
+      );
+
+      // Update allowed for owner, institution manager, or admin,
+      // but only mutable fields are permitted.
+      allow update: if (
+        (resource.data.ownerId == request.auth.uid && isCallerActive()) ||
+        isAdmin() ||
+        isInstitutionManager(resource.data.institutionId)
+      ) && !request.resource.data.diff(resource.data).affectedKeys().hasAny([
+        'id','ownerId','institutionId','quantity','availableQuantity','createdAt','updatedAt','availabilityStatus'
+      ]);
+
+      // Direct client creates/deletes are blocked – use privileged functions.
+      allow create, delete: if false;
     }
 
     match /bookings/{bookingId} {
