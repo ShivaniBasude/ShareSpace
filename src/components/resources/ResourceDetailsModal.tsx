@@ -16,12 +16,14 @@ export interface ResourceDetailsModalProps {
   resource: Resource | null;
   isOpen: boolean;
   onClose: () => void;
+  onRequestBooking?: (resource: Resource) => void;
 }
 
 export const ResourceDetailsModal: React.FC<ResourceDetailsModalProps> = ({
   resource,
   isOpen,
   onClose,
+  onRequestBooking,
 }) => {
   // Close on Escape key
   useEffect(() => {
@@ -215,13 +217,13 @@ export const ResourceDetailsModal: React.FC<ResourceDetailsModalProps> = ({
             size="sm"
             disabled={!isAvailable || resource.availableQuantity === 0}
             onClick={() => {
-              alert(
-                `Resource reservation calendar and time-slot selection will be activated in Phase 3 for "${resource.title}".`
-              );
+              if (onRequestBooking) {
+                onRequestBooking(resource);
+              }
             }}
           >
             {isAvailable && resource.availableQuantity > 0
-              ? 'Request Reservation (Phase 3)'
+              ? 'Request Reservation'
               : 'Currently Unavailable'}
           </Button>
         </div>

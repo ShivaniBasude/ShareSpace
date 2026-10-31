@@ -12,6 +12,14 @@ import {
   ForgotPasswordPage,
   NotFoundPage,
   StudentMarketplacePage,
+  StudentBookingsPage,
+  StudentIncidentsPage,
+  StudentNotificationsPage,
+  OwnerResourcesPage,
+  OwnerDashboardPage,
+  OwnerBookingsPage,
+  OwnerVerifyBookingPage,
+  OwnerIncidentsPage,
 } from '../pages';
 
 import { ProtectedRoute } from './ProtectedRoute';
@@ -33,6 +41,12 @@ const RoleDashboardRedirect: React.FC = () => {
     default:
       return <Navigate to="/login" replace />;
   }
+};
+
+const RoleNotificationRedirect: React.FC = () => {
+  const { role } = useAuth();
+  if (role === 'owner') return <Navigate to="/owner/bookings" replace />;
+  return <Navigate to="/student/notifications" replace />;
 };
 
 const UnauthorizedPage: React.FC = () => (
@@ -59,20 +73,22 @@ export const AppRoutes: React.FC = () => (
       <Route path="*" element={<NotFoundPage />} />
     </Route>
 
-    {/* Generic authenticated dashboard redirect */}
+    {/* Generic authenticated dashboard & notifications redirect */}
     <Route element={<ProtectedRoute />}>
       <Route path="/dashboard" element={<RoleDashboardRedirect />} />
+      <Route path="/notifications" element={<RoleNotificationRedirect />} />
     </Route>
 
     {/* Student routes */}
     <Route element={<ProtectedRoute allowedRoles={['student']} />}>
       <Route element={<DashboardLayout />}>
         <Route path="/student/dashboard" element={<StudentDashboardPage />} />
-        <Route path="/student/bookings" element={<PlaceholderPage title="My Bookings" />} />
+        <Route path="/student/bookings" element={<StudentBookingsPage />} />
+        <Route path="/student/bookings/:bookingId" element={<StudentBookingsPage />} />
         <Route path="/student/resources" element={<StudentMarketplacePage />} />
-        <Route path="/student/qr-passes" element={<PlaceholderPage title="My QR Passes" />} />
-        <Route path="/student/incidents" element={<PlaceholderPage title="Report Incident" />} />
-        <Route path="/student/notifications" element={<PlaceholderPage title="Notifications" />} />
+        <Route path="/student/qr-passes" element={<StudentBookingsPage />} />
+        <Route path="/student/incidents" element={<StudentIncidentsPage />} />
+        <Route path="/student/notifications" element={<StudentNotificationsPage />} />
         <Route path="/student/profile" element={<PlaceholderPage title="My Profile" />} />
       </Route>
     </Route>
@@ -80,11 +96,13 @@ export const AppRoutes: React.FC = () => (
     {/* Resource owner routes */}
     <Route element={<ProtectedRoute allowedRoles={['owner']} />}>
       <Route element={<DashboardLayout />}>
-        <Route path="/owner/dashboard" element={<PlaceholderPage title="Owner Dashboard" />} />
-        <Route path="/owner/resources" element={<PlaceholderPage title="Resource Inventory" />} />
-        <Route path="/owner/bookings" element={<PlaceholderPage title="Booking Requests" />} />
-        <Route path="/owner/loans" element={<PlaceholderPage title="Active Loans" />} />
-        <Route path="/owner/incidents" element={<PlaceholderPage title="Incidents" />} />
+        <Route path="/owner/dashboard" element={<OwnerDashboardPage />} />
+        <Route path="/owner/resources" element={<OwnerResourcesPage />} />
+        <Route path="/owner/bookings" element={<OwnerBookingsPage />} />
+        <Route path="/owner/bookings/:bookingId" element={<OwnerBookingsPage />} />
+        <Route path="/owner/loans" element={<OwnerBookingsPage />} />
+        <Route path="/owner/verify-booking" element={<OwnerVerifyBookingPage />} />
+        <Route path="/owner/incidents" element={<OwnerIncidentsPage />} />
         <Route path="/owner/profile" element={<PlaceholderPage title="My Profile" />} />
       </Route>
     </Route>
