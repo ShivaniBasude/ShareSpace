@@ -1,9 +1,29 @@
 rules_version = '2';
 service firebase.storage {
   match /b/{bucket}/o {
-    // Default: Deny all reads and writes until specific path rules are implemented
-    match /{allPaths=**} {
-      allow read, write: if request.auth != null;
+    // Resource images stored in:
+    //   resource_images/{institutionId}/{resourceId}/{filename}
+    match /resource_images/{institutionId}/{resourceId}/{allPaths=**} {
+      // Active authenticated user belonging to the same institution.
+      allow read: if request.auth != null &&
+                  request.auth.token.accountStatus != 'disabled' &&
+                  request.auth.token.institutionId == institutionId;
+
+      // Write (upload/delete) allowed only for the resource owner.
+      // - Creation only if the object does not yet exist (prevent overwrites).
+      // - Enforce file size <= 5 MB and MIME type is image/jpeg or image/png.
+      allow create: if request.auth != null &&
+                    request.auth.token.accountStatus != 'disabled' &&
+                    request.auth.token.institutionId == institutionId &&
+                    firestore.get(/databases/$(database)/documents/resources/$(resourceId)).data.ownerId == request.auth.uid &&
+                    request.resource.size <= 5 * 1024 * 1024 &&
+                    request.resource.contentType.matches('image/(jpeg|png)');
+
+      // Deletions only by owner.
+      allow delete: if request.auth != null &&
+                    request.auth.token.accountStatus != 'disabled' &&
+                    request.auth.token.institutionId == institutionId &&
+                    firestore.get(/databases/$(database)/documents/resources/$(resourceId)).data.ownerId == request.auth.uid;
     }
   }
 }

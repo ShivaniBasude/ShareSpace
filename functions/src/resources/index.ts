@@ -1,2 +1,6 @@
-// Resources Cloud Functions placeholder (e.g. generateResourceQR, onResourceUpdated)
-export {};
+export * from './createResource';
+export * from './getResource';
+export * from './listResources';
+export * from './updateResource';
+export * from './deactivateResource';
+export * from './searchResources';
