@@ -1,2 +1,1 @@
-// Application Routing placeholder
-export {};
+export * from './AppRoutes';
