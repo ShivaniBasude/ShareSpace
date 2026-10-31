@@ -1,2 +1,2 @@
-// Resources feature module placeholder
-export {};
+export * from './mockResources';
+export * from './resourceService';

@@ -59,14 +59,11 @@ export const Navbar: React.FC = () => {
             ))}
           </nav>
 
-          {/* Desktop Action Buttons (Prepared for Phase 2) */}
+          {/* Desktop Action Buttons */}
           <div className="hidden sm:flex items-center gap-2.5">
             <Link to="/login">
               <Button variant="ghost" size="sm">
                 Log In
-                <span className="ml-1.5 text-[10px] font-semibold uppercase tracking-wider text-indigo-600 dark:text-indigo-400 bg-indigo-50 dark:bg-indigo-950/60 px-1.5 py-0.5 rounded border border-indigo-200 dark:border-indigo-800">
-                  Phase 2
-                </span>
               </Button>
             </Link>
             <Link to="/register">
@@ -123,9 +120,6 @@ export const Navbar: React.FC = () => {
               >
                 <Button variant="outline" size="md" fullWidth>
                   Log In
-                  <span className="ml-1.5 text-[10px] font-semibold uppercase tracking-wider text-indigo-600 dark:text-indigo-400 bg-indigo-50 dark:bg-indigo-950/60 px-1.5 py-0.5 rounded border border-indigo-200 dark:border-indigo-800">
-                    Phase 2
-                  </span>
                 </Button>
               </Link>
               <Link
@@ -144,4 +138,3 @@ export const Navbar: React.FC = () => {
     </header>
   );
 };
-
