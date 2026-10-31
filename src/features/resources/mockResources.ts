@@ -24,7 +24,7 @@ export const MOCK_RESOURCES: Resource[] = [
     category: ResourceCategory.Electronics,
     resourceType: 'Workstation',
     institutionId: 'univ-main',
-    ownerId: 'faculty-cs-lab',
+    ownerId: 'demo-owner-uid',
     location: 'Turing Computer Science Building, Lab 304',
     quantity: 6,
     availableQuantity: 4,

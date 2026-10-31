@@ -12,6 +12,8 @@ import {
   ForgotPasswordPage,
   NotFoundPage,
   StudentMarketplacePage,
+  OwnerResourcesPage,
+  OwnerDashboardPage,
 } from '../pages';
 
 import { ProtectedRoute } from './ProtectedRoute';
@@ -80,8 +82,8 @@ export const AppRoutes: React.FC = () => (
     {/* Resource owner routes */}
     <Route element={<ProtectedRoute allowedRoles={['owner']} />}>
       <Route element={<DashboardLayout />}>
-        <Route path="/owner/dashboard" element={<PlaceholderPage title="Owner Dashboard" />} />
-        <Route path="/owner/resources" element={<PlaceholderPage title="Resource Inventory" />} />
+        <Route path="/owner/dashboard" element={<OwnerDashboardPage />} />
+        <Route path="/owner/resources" element={<OwnerResourcesPage />} />
         <Route path="/owner/bookings" element={<PlaceholderPage title="Booking Requests" />} />
         <Route path="/owner/loans" element={<PlaceholderPage title="Active Loans" />} />
         <Route path="/owner/incidents" element={<PlaceholderPage title="Incidents" />} />
