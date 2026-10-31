@@ -2,7 +2,6 @@
  * ShareSpace — Firebase Cloud Functions Entry Point
  *
  * Backend modules are organized by domain under their respective subdirectories.
- * Business logic will be implemented here by the Backend Developer.
  */
 
 import * as admin from 'firebase-admin';
@@ -15,8 +14,10 @@ if (!admin.apps.length) {
 // Export shared types
 export * from './shared';
 
-// Domain modules (empty exports for initial setup)
-export * as authFunctions from './auth';
+// Phase 1 Authentication & User Management Callable Functions
+export * from './auth';
+
+// Domain modules (future phases)
 export * as resourceFunctions from './resources';
 export * as bookingFunctions from './bookings';
 export * as qrFunctions from './qr';

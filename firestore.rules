@@ -11,41 +11,91 @@ service cloud.firestore {
       return isAuthenticated() && request.auth.uid == userId;
     }
 
+    function getUserData(userId) {
+      return get(/databases/$(database)/documents/users/$(userId)).data;
+    }
+
+    function isCallerActive() {
+      return isAuthenticated() && (
+        request.auth.token.accountStatus != 'disabled' &&
+        (!exists(/databases/$(database)/documents/users/$(request.auth.uid)) ||
+         getUserData(request.auth.uid).accountStatus != 'disabled')
+      );
+    }
+
+    function isAdmin() {
+      return isAuthenticated() && isCallerActive() && (
+        request.auth.token.role == 'admin' ||
+        (exists(/databases/$(database)/documents/users/$(request.auth.uid)) &&
+         getUserData(request.auth.uid).role == 'admin')
+      );
+    }
+
+    function isInstitutionManager(instId) {
+      return isAuthenticated() && isCallerActive() && (
+        (request.auth.token.role == 'institution_manager' && request.auth.token.institutionId == instId) ||
+        (exists(/databases/$(database)/documents/users/$(request.auth.uid)) &&
+         getUserData(request.auth.uid).role == 'institution_manager' &&
+         getUserData(request.auth.uid).institutionId == instId)
+      );
+    }
+
     // Default: Deny all reads and writes until specific collection rules are implemented
     match /{document=**} {
       allow read, write: if false;
     }
 
-    // Planned collection match blocks (Backend Developer will implement logic)
+    // USERS COLLECTION
     match /users/{userId} {
-      allow read: if isAuthenticated();
-      allow write: if isOwner(userId);
+      // Read access:
+      // - Owner can read their own profile (if active)
+      // - Institution manager can read profiles of users belonging to their institution
+      // - Administrator can read any profile
+      allow read: if (isOwner(userId) && isCallerActive()) ||
+                     (isAuthenticated() && isCallerActive() && isInstitutionManager(resource.data.institutionId)) ||
+                     isAdmin();
+
+      // Create & Delete access:
+      // Direct client creation/deletion is blocked.
+      // Handled exclusively by trusted Cloud Functions / Admin SDK.
+      allow create, delete: if false;
+
+      // Update access:
+      // - Owner can update permitted fields only
+      // - Role, accountStatus, institutionId, email, uid, createdAt are strictly protected
+      // - Administrator can update
+      allow update: if (
+        isOwner(userId) &&
+        isCallerActive() &&
+        !request.resource.data.diff(resource.data).affectedKeys()
+          .hasAny(['role', 'accountStatus', 'institutionId', 'email', 'uid', 'createdAt'])
+      ) || isAdmin();
     }
 
+    // Placeholders for subsequent phases (Phase 2+)
     match /resources/{resourceId} {
-      allow read: if isAuthenticated();
-      allow write: if false; // Managed via admin / Cloud Functions
+      allow read: if isCallerActive();
+      allow write: if false;
     }
 
     match /bookings/{bookingId} {
-      allow read, write: if isAuthenticated();
+      allow read, write: if false;
     }
 
     match /approvals/{approvalId} {
-      allow read, write: if isAuthenticated();
+      allow read, write: if false;
     }
 
     match /incidents/{incidentId} {
-      allow read, write: if isAuthenticated();
+      allow read, write: if false;
     }
 
     match /notifications/{notificationId} {
-      allow read, write: if isAuthenticated();
+      allow read, write: if false;
     }
 
     match /audit_logs/{logId} {
-      allow read: if isAuthenticated();
-      allow write: if false; // Cloud Functions only
+      allow read, write: if false;
     }
   }
 }
