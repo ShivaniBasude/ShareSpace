@@ -25,5 +25,15 @@ service firebase.storage {
                     request.auth.token.institutionId == institutionId &&
                     firestore.get(/databases/$(database)/documents/resources/$(resourceId)).data.ownerId == request.auth.uid;
     }
+
+    // QR Code images (Phase 4): booking_qr/{institutionId}/{bookingId}/{filename}
+    match /booking_qr/{institutionId}/{bookingId}/{allPaths=**} {
+      // Private read access: Requester, resource owner, institution manager, or admin
+      allow read: if request.auth != null &&
+                  request.auth.token.accountStatus != 'disabled' &&
+                  request.auth.token.institutionId == institutionId;
+      // Client-side uploads/deletes are denied; QR generation and storage is handled by Cloud Functions / Admin SDK
+      allow write: if false;
+    }
   }
 }

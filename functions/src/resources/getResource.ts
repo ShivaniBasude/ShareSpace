@@ -2,10 +2,9 @@ import { onCall, HttpsError } from 'firebase-functions/v2/https';
 import { getUserProfile } from './service';
 import { docToResource } from './resource.model';
 import { getResourceDoc } from './service';
-import { Resource } from '../../../packages/shared/src/types';
 
 /** Callable function to retrieve a single resource by ID. */
-export const getResource = onCall<any, Resource>(async (request) => {
+export const getResource = onCall(async (request) => {
   if (!request.auth) {
     throw new HttpsError('unauthenticated', 'Authentication required.');
   }

@@ -17,7 +17,7 @@ if (!admin.apps.length) {
 
 // In-memory mock database for isolated unit testing
 class MockDocReference {
-  constructor(private collectionMap: Map<string, any>, private id: string) {}
+  constructor(private collectionMap: Map<string, unknown>, private id: string) {}
 
   async get() {
     const data = this.collectionMap.get(this.id);

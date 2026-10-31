@@ -96,8 +96,39 @@ service cloud.firestore {
       allow create, delete: if false;
     }
 
+    // BOOKINGS COLLECTION (Phase 3)
     match /bookings/{bookingId} {
-      allow read, write: if false;
+      // Read access:
+      // - Requester (student/borrower) can view their own bookings
+      // - Resource owner can view bookings for their resource
+      // - Institution manager can view bookings in their institution
+      // - Admin can view any booking
+      allow read: if isCallerActive() && (
+        resource.data.userId == request.auth.uid ||
+        resource.data.ownerId == request.auth.uid ||
+        isInstitutionManager(resource.data.institutionId) ||
+        isAdmin()
+      );
+
+      // All mutations must go exclusively through trusted Callable Cloud Functions
+      allow write: if false;
+    }
+
+    // QR CODES COLLECTION (Phase 4)
+    match /qr_codes/{qrId} {
+      // Direct client reads:
+      // - Requester or resource owner can view metadata
+      // - Institution manager and admin can view metadata
+      allow read: if isCallerActive() && (
+        resource.data.requesterId == request.auth.uid ||
+        resource.data.ownerId == request.auth.uid ||
+        isInstitutionManager(resource.data.institutionId) ||
+        isAdmin()
+      );
+
+      // Direct client writes are strictly denied: all QR operations
+      // (generate, verify, check-in, check-out) execute in privileged Cloud Functions
+      allow write: if false;
     }
 
     match /approvals/{approvalId} {

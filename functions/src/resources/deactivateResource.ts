@@ -2,10 +2,9 @@ import { onCall, HttpsError } from 'firebase-functions/v2/https';
 import { getUserProfile } from './service';
 import { deactivateResourceDoc, getResourceDoc } from './service';
 import { docToResource } from './resource.model';
-import { Resource } from '../../../packages/shared/src/types';
 
 /** Callable function to deactivate a resource (set availabilityStatus to 'unavailable'). */
-export const deactivateResource = onCall<any, Resource>(async (request) => {
+export const deactivateResource = onCall(async (request) => {
   if (!request.auth) {
     throw new HttpsError('unauthenticated', 'Authentication required.');
   }
@@ -28,6 +27,6 @@ export const deactivateResource = onCall<any, Resource>(async (request) => {
     throw new HttpsError('permission-denied', 'Only the owner or an institution manager/admin can deactivate the resource.');
   }
 
-  const deactivatedSnap = await deactivateResourceDoc(resourceId);
+  const deactivatedSnap = await deactivateResourceDoc(resourceId as string);
   return docToResource(deactivatedSnap);
 });

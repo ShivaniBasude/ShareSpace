@@ -5,11 +5,7 @@ import { Resource } from '../../../packages/shared/src/types';
 
 
 /** Callable function to create a new resource. */
-export const createResource = onCall<
-  // Input type inferred from Zod, but we keep generic any for runtime validation
-  any,
-  Resource
->(async (request) => {
+export const createResource = onCall(async (request) => {
   // Authentication check
   if (!request.auth) {
     throw new HttpsError('unauthenticated', 'Authentication required.');
