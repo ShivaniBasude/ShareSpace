@@ -1,7 +1,13 @@
-import React from 'react';
 import { Routes, Route } from 'react-router-dom';
 import { MainLayout } from '../components/layout';
-import { LandingPage, AboutPage, AuthPreviewPage, NotFoundPage } from '../pages';
+import {
+  LandingPage,
+  AboutPage,
+  LoginPage,
+  RegisterPage,
+  ForgotPasswordPage,
+  NotFoundPage,
+} from '../pages';
 
 export const AppRoutes: React.FC = () => {
   return (
@@ -9,11 +15,11 @@ export const AppRoutes: React.FC = () => {
       <Route path="/" element={<MainLayout />}>
         <Route index element={<LandingPage />} />
         <Route path="about" element={<AboutPage />} />
-        <Route path="login" element={<AuthPreviewPage mode="login" />} />
-        <Route path="register" element={<AuthPreviewPage mode="register" />} />
+        <Route path="login" element={<LoginPage />} />
+        <Route path="register" element={<RegisterPage />} />
+        <Route path="forgot-password" element={<ForgotPasswordPage />} />
         <Route path="*" element={<NotFoundPage />} />
       </Route>
     </Routes>
   );
 };
-

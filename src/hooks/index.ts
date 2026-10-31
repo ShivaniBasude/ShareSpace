@@ -1,2 +1,1 @@
-// Custom React hooks placeholder
-export {};
+export * from './useAuth';
