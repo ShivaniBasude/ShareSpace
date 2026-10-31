@@ -4,6 +4,7 @@ import type { Resource } from '../../../packages/shared/src/types';
 import {
   Badge,
   Button,
+  CalendarIcon,
   Card,
   CardContent,
   CardHeader,
@@ -11,9 +12,9 @@ import {
   CheckCircle2Icon,
   ChevronRightIcon,
   ClockIcon,
-  LayersIcon,
   PackageIcon,
   PlusIcon,
+  QrCodeIcon,
   ShieldCheckIcon,
 } from '../../components/common';
 import {
@@ -22,19 +23,26 @@ import {
 } from '../../components/resources';
 import {
   resourceService,
+  DEMO_OWNER_ID,
   type CreateResourceInput,
   type OwnerActivityLog,
   type OwnerResourceStats,
   type UpdateResourceInput,
 } from '../../features/resources';
+import {
+  bookingService,
+  type BookingWithQuantity,
+} from '../../features/bookings';
 import { useAuth } from '../../hooks';
 
 export const OwnerDashboardPage: React.FC = () => {
   const { profile } = useAuth();
+  const effectiveOwnerId = profile?.uid || DEMO_OWNER_ID;
 
   const [stats, setStats] = useState<OwnerResourceStats | null>(null);
   const [recentResources, setRecentResources] = useState<Resource[]>([]);
   const [activities, setActivities] = useState<OwnerActivityLog[]>([]);
+  const [ownerBookings, setOwnerBookings] = useState<BookingWithQuantity[]>([]);
   const [isLoading, setIsLoading] = useState<boolean>(true);
 
   // Modal states
@@ -47,19 +55,21 @@ export const OwnerDashboardPage: React.FC = () => {
   const refreshDashboardData = useCallback(async () => {
     setIsLoading(true);
     try {
-      const [statsData, resourcesData, activityData] = await Promise.all([
-        resourceService.getOwnerResourceStats(),
-        resourceService.getOwnerResources(undefined, 0),
-        resourceService.getOwnerRecentActivity(),
+      const [statsData, resourcesData, activityData, bookingsData] = await Promise.all([
+        resourceService.getOwnerResourceStats(effectiveOwnerId),
+        resourceService.getOwnerResources(effectiveOwnerId, undefined, 0),
+        resourceService.getOwnerRecentActivity(effectiveOwnerId),
+        bookingService.getOwnerBookings(effectiveOwnerId, 0),
       ]);
 
       setStats(statsData);
       setRecentResources(resourcesData.slice(0, 4));
       setActivities(activityData);
+      setOwnerBookings(bookingsData);
     } finally {
       setIsLoading(false);
     }
-  }, []);
+  }, [effectiveOwnerId]);
 
   // Initial load without synchronous setState in effect
   useEffect(() => {
@@ -67,16 +77,18 @@ export const OwnerDashboardPage: React.FC = () => {
 
     const fetchInitialData = async () => {
       try {
-        const [statsData, resourcesData, activityData] = await Promise.all([
-          resourceService.getOwnerResourceStats(),
-          resourceService.getOwnerResources(undefined, 0),
-          resourceService.getOwnerRecentActivity(),
+        const [statsData, resourcesData, activityData, bookingsData] = await Promise.all([
+          resourceService.getOwnerResourceStats(effectiveOwnerId),
+          resourceService.getOwnerResources(effectiveOwnerId, undefined, 0),
+          resourceService.getOwnerRecentActivity(effectiveOwnerId),
+          bookingService.getOwnerBookings(effectiveOwnerId, 0),
         ]);
 
         if (isMounted) {
           setStats(statsData);
           setRecentResources(resourcesData.slice(0, 4));
           setActivities(activityData);
+          setOwnerBookings(bookingsData);
         }
       } finally {
         if (isMounted) {
@@ -90,14 +102,18 @@ export const OwnerDashboardPage: React.FC = () => {
     return () => {
       isMounted = false;
     };
-  }, []);
+  }, [effectiveOwnerId]);
+
+  const pendingBookings = ownerBookings.filter((b) => b.status === 'pending');
+  const activeBookings = ownerBookings.filter((b) => b.status === 'checked_in');
+  const overdueBookings = activeBookings.filter((b) => new Date(b.endTime) < new Date());
 
   // Handle resource creation from Dashboard shortcut
   const handleCreateResource = async (data: CreateResourceInput | UpdateResourceInput) => {
     setIsSubmitting(true);
     try {
       await resourceService.createResource(data as CreateResourceInput, {
-        ownerId: profile?.uid,
+        ownerId: effectiveOwnerId,
         institutionId: profile?.institutionId,
       });
       setIsFormOpen(false);
@@ -149,11 +165,16 @@ export const OwnerDashboardPage: React.FC = () => {
           </p>
         </div>
 
-        {/* Quick Action: Add Resource */}
-        <div className="flex items-center gap-2.5">
-          <Link to="/owner/resources">
-            <Button variant="outline" size="sm" icon={<LayersIcon className="h-4 w-4" />}>
-              Full Inventory
+        {/* Quick Actions */}
+        <div className="flex flex-wrap items-center gap-2.5">
+          <Link to="/owner/verify-booking">
+            <Button variant="outline" size="sm" icon={<QrCodeIcon className="h-4 w-4" />}>
+              Verify Pass
+            </Button>
+          </Link>
+          <Link to="/owner/bookings">
+            <Button variant="secondary" size="sm" icon={<CalendarIcon className="h-4 w-4" />}>
+              Bookings {pendingBookings.length > 0 && `(${pendingBookings.length})`}
             </Button>
           </Link>
           <Button
@@ -166,6 +187,42 @@ export const OwnerDashboardPage: React.FC = () => {
           </Button>
         </div>
       </div>
+
+      {/* ── Pending Requests Alert Banner ── */}
+      {pendingBookings.length > 0 && (
+        <div className="flex items-center justify-between rounded-xl border border-amber-200 bg-amber-50 p-4 text-xs text-amber-900 dark:border-amber-900/60 dark:bg-amber-950/40 dark:text-amber-200">
+          <div className="flex items-center gap-2">
+            <ClockIcon className="h-4 w-4 shrink-0 text-amber-600 dark:text-amber-400" />
+            <span>
+              You have <strong>{pendingBookings.length}</strong> pending booking request(s) waiting for your review.
+            </span>
+          </div>
+          <Link
+            to="/owner/bookings"
+            className="font-bold underline text-amber-800 dark:text-amber-300 hover:text-amber-900"
+          >
+            Review Requests →
+          </Link>
+        </div>
+      )}
+
+      {/* ── Overdue Alert Banner ── */}
+      {overdueBookings.length > 0 && (
+        <div className="flex items-center justify-between rounded-xl border border-rose-200 bg-rose-50 p-4 text-xs text-rose-900 dark:border-rose-900/60 dark:bg-rose-950/40 dark:text-rose-200">
+          <div className="flex items-center gap-2">
+            <ClockIcon className="h-4 w-4 shrink-0 text-rose-600" />
+            <span>
+              <strong>{overdueBookings.length}</strong> active checkout(s) are past their scheduled return date.
+            </span>
+          </div>
+          <Link
+            to="/owner/bookings"
+            className="font-bold underline text-rose-800 dark:text-rose-300 hover:text-rose-900"
+          >
+            View Overdue →
+          </Link>
+        </div>
+      )}
 
       {/* ── Summary Stats Cards (Dynamic Mock Calculations) ── */}
       {isLoading ? (
@@ -348,6 +405,54 @@ export const OwnerDashboardPage: React.FC = () => {
 
         {/* Right Column: Activity Log & Governance */}
         <div className="space-y-6">
+          {/* Incoming Booking Requests */}
+          <Card className="border-slate-200/80 dark:border-slate-800">
+            <CardHeader className="pb-3">
+              <div className="flex items-center justify-between">
+                <CardTitle className="text-sm">Pending Booking Requests</CardTitle>
+                <span className="rounded-md bg-amber-50 px-2 py-0.5 text-3xs font-semibold text-amber-700 dark:bg-amber-950/50 dark:text-amber-400">
+                  {pendingBookings.length} pending
+                </span>
+              </div>
+            </CardHeader>
+            <CardContent className="pt-0">
+              {pendingBookings.length === 0 ? (
+                <p className="text-xs text-slate-400 py-2">No pending booking requests.</p>
+              ) : (
+                <div className="space-y-3">
+                  {pendingBookings.slice(0, 3).map((req) => (
+                    <div
+                      key={req.id}
+                      className="rounded-lg bg-slate-50 p-3 text-xs dark:bg-slate-800/60 space-y-1"
+                    >
+                      <div className="flex items-center justify-between font-semibold text-slate-900 dark:text-white">
+                        <span className="line-clamp-1">{req.resourceTitle}</span>
+                        <span className="text-3xs font-mono text-slate-400">
+                          {req.requestedQuantity} unit(s)
+                        </span>
+                      </div>
+                      <p className="text-3xs text-slate-500">From: {req.userDisplayName}</p>
+                      <div className="flex justify-end pt-1">
+                        <Link
+                          to="/owner/bookings"
+                          className="text-3xs font-bold text-indigo-600 dark:text-indigo-400 hover:underline"
+                        >
+                          Review Request →
+                        </Link>
+                      </div>
+                    </div>
+                  ))}
+                  <Link
+                    to="/owner/bookings"
+                    className="block text-center text-xs font-semibold text-indigo-600 hover:underline pt-1"
+                  >
+                    Manage All Requests ({pendingBookings.length})
+                  </Link>
+                </div>
+              )}
+            </CardContent>
+          </Card>
+
           {/* Demonstration Activity Log */}
           <Card className="border-slate-200/80 dark:border-slate-800">
             <CardHeader className="pb-3">

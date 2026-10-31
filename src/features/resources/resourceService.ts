@@ -172,15 +172,35 @@ export const resourceService = {
 
   /**
    * Retrieves resources managed by a specific owner (with optional search & filters).
-   * Only returns resources whose ownerId matches the supplied ownerId.
+   * Only returns resources whose ownerId matches the supplied ownerId (defaults to DEMO_OWNER_ID).
    */
   async getOwnerResources(
-    ownerId: string,
-    filters?: ResourceFilterOptions,
+    ownerIdOrFilters?: string | ResourceFilterOptions,
+    filtersOrDelay?: ResourceFilterOptions | number,
     simulateDelayMs = 200
   ): Promise<Resource[]> {
-    if (simulateDelayMs > 0) {
-      await new Promise((resolve) => setTimeout(resolve, simulateDelayMs));
+    let ownerId = DEMO_OWNER_ID;
+    let filters: ResourceFilterOptions | undefined;
+    let delay = simulateDelayMs;
+
+    if (typeof ownerIdOrFilters === 'string') {
+      ownerId = ownerIdOrFilters;
+      if (typeof filtersOrDelay === 'object') {
+        filters = filtersOrDelay;
+      } else if (typeof filtersOrDelay === 'number') {
+        delay = filtersOrDelay;
+      }
+    } else if (typeof ownerIdOrFilters === 'object') {
+      filters = ownerIdOrFilters;
+      if (typeof filtersOrDelay === 'number') {
+        delay = filtersOrDelay;
+      }
+    } else if (ownerIdOrFilters === undefined && typeof filtersOrDelay === 'number') {
+      delay = filtersOrDelay;
+    }
+
+    if (delay > 0) {
+      await new Promise((resolve) => setTimeout(resolve, delay));
     }
 
     // Scope to the owner's resources first
@@ -221,7 +241,10 @@ export const resourceService = {
   /**
    * Computes summary metrics for a specific owner's resources.
    */
-  async getOwnerResourceStats(ownerId: string, simulateDelayMs = 150): Promise<OwnerResourceStats> {
+  async getOwnerResourceStats(
+    ownerId: string = DEMO_OWNER_ID,
+    simulateDelayMs = 150
+  ): Promise<OwnerResourceStats> {
     if (simulateDelayMs > 0) {
       await new Promise((resolve) => setTimeout(resolve, simulateDelayMs));
     }
@@ -248,7 +271,10 @@ export const resourceService = {
   /**
    * Retrieves recent activity logs scoped to a specific owner.
    */
-  async getOwnerRecentActivity(ownerId: string, simulateDelayMs = 100): Promise<OwnerActivityLog[]> {
+  async getOwnerRecentActivity(
+    ownerId: string = DEMO_OWNER_ID,
+    simulateDelayMs = 100
+  ): Promise<OwnerActivityLog[]> {
     if (simulateDelayMs > 0) {
       await new Promise((resolve) => setTimeout(resolve, simulateDelayMs));
     }
@@ -494,6 +520,43 @@ export const resourceService = {
     ];
 
     return { ...reactivated };
+  },
+
+  /**
+   * Reserves (reduces) availableQuantity when a booking is approved.
+   * Called by bookingService — not exposed to the UI directly.
+   */
+  async reserveQuantity(resourceId: string, qty: number): Promise<void> {
+    const index = resourcesStore.findIndex((r) => r.id === resourceId);
+    if (index === -1) return;
+    const existing = resourcesStore[index];
+    const newQty = Math.max(0, existing.availableQuantity - qty);
+    resourcesStore[index] = {
+      ...existing,
+      availableQuantity: newQty,
+      availabilityStatus: newQty === 0 ? 'reserved' : existing.availabilityStatus,
+      updatedAt: new Date().toISOString(),
+    };
+  },
+
+  /**
+   * Restores availableQuantity when a booking is cancelled (after approval) or completed.
+   * Called by bookingService — not exposed to the UI directly.
+   */
+  async restoreQuantity(resourceId: string, qty: number): Promise<void> {
+    const index = resourcesStore.findIndex((r) => r.id === resourceId);
+    if (index === -1) return;
+    const existing = resourcesStore[index];
+    const newQty = Math.min(existing.quantity, existing.availableQuantity + qty);
+    resourcesStore[index] = {
+      ...existing,
+      availableQuantity: newQty,
+      availabilityStatus:
+        existing.availabilityStatus === 'reserved' && newQty > 0
+          ? 'available'
+          : existing.availabilityStatus,
+      updatedAt: new Date().toISOString(),
+    };
   },
 
   /**

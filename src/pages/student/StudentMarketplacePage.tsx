@@ -10,8 +10,15 @@ import {
   ResourceDetailsModal,
 } from '../../components/resources';
 import { resourceService } from '../../features/resources';
+import {
+  bookingService,
+  DEMO_STUDENT_ID,
+  DEMO_STUDENT_NAME,
+  DEMO_STUDENT_EMAIL,
+} from '../../features/bookings';
 import { useAuth } from '../../hooks';
-import { SparklesIcon } from '../../components/common';
+import { CheckCircle2Icon, SparklesIcon } from '../../components/common';
+import { BookingRequestModal } from '../../components/bookings';
 
 export const StudentMarketplacePage: React.FC = () => {
   const { profile } = useAuth();
@@ -32,6 +39,11 @@ export const StudentMarketplacePage: React.FC = () => {
   // ── Modal State ──
   const [selectedResource, setSelectedResource] = useState<Resource | null>(null);
   const [isModalOpen, setIsModalOpen] = useState<boolean>(false);
+
+  // ── Booking Request State ──
+  const [isBookingModalOpen, setIsBookingModalOpen] = useState<boolean>(false);
+  const [isSubmittingBooking, setIsSubmittingBooking] = useState<boolean>(false);
+  const [bannerMessage, setBannerMessage] = useState<string | null>(null);
 
   // Load all resources on mount
   const loadResources = useCallback(async () => {
@@ -141,8 +153,56 @@ export const StudentMarketplacePage: React.FC = () => {
 
   const handleCloseDetails = useCallback(() => {
     setIsModalOpen(false);
-    setSelectedResource(null);
   }, []);
+
+  const handleOpenBookingRequest = useCallback((resource: Resource) => {
+    setIsModalOpen(false);
+    setSelectedResource(resource);
+    setIsBookingModalOpen(true);
+  }, []);
+
+  const handleCloseBookingModal = useCallback(() => {
+    setIsBookingModalOpen(false);
+  }, []);
+
+  const handleSubmitBooking = useCallback(
+    async (data: {
+      requestedQuantity: number;
+      startTime: string;
+      endTime: string;
+      purpose: string;
+    }) => {
+      if (!selectedResource) return;
+      setIsSubmittingBooking(true);
+      try {
+        await bookingService.createBookingRequest({
+          resourceId: selectedResource.id,
+          resourceTitle: selectedResource.title,
+          resourceCategory: selectedResource.category,
+          resourceLocation: selectedResource.location,
+          ownerId: selectedResource.ownerId,
+          requestedQuantity: data.requestedQuantity,
+          startTime: data.startTime,
+          endTime: data.endTime,
+          purpose: data.purpose,
+          userId: profile?.uid || DEMO_STUDENT_ID,
+          userDisplayName: profile?.fullName || DEMO_STUDENT_NAME,
+          userEmail: profile?.email || DEMO_STUDENT_EMAIL,
+        });
+
+        setIsBookingModalOpen(false);
+        setBannerMessage(
+          `Your booking request for "${selectedResource.title}" was submitted successfully! View it under "My Bookings".`
+        );
+        await loadResources();
+      } catch (err: unknown) {
+        alert(err instanceof Error ? err.message : 'Failed to submit booking request.');
+      } finally {
+        setIsSubmittingBooking(false);
+      }
+    },
+    [selectedResource, profile, loadResources]
+  );
 
   const isFiltered =
     searchQuery.trim().length > 0 ||
@@ -152,6 +212,26 @@ export const StudentMarketplacePage: React.FC = () => {
 
   return (
     <div className="space-y-6">
+      {/* ── Status Banner ── */}
+      {bannerMessage && (
+        <div
+          role="status"
+          className="flex items-center justify-between rounded-xl border border-emerald-200 bg-emerald-50 px-4 py-3 text-xs text-emerald-800 animate-in fade-in duration-200 dark:border-emerald-900/60 dark:bg-emerald-950/40 dark:text-emerald-300"
+        >
+          <div className="flex items-center gap-2">
+            <CheckCircle2Icon className="h-4 w-4 shrink-0 text-emerald-600 dark:text-emerald-400" />
+            <span>{bannerMessage}</span>
+          </div>
+          <button
+            type="button"
+            onClick={() => setBannerMessage(null)}
+            className="cursor-pointer text-xs font-semibold hover:underline"
+          >
+            Dismiss
+          </button>
+        </div>
+      )}
+
       {/* ── Page Header ── */}
       <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
         <div>
@@ -210,6 +290,16 @@ export const StudentMarketplacePage: React.FC = () => {
         resource={selectedResource}
         isOpen={isModalOpen}
         onClose={handleCloseDetails}
+        onRequestBooking={handleOpenBookingRequest}
+      />
+
+      {/* ── Booking Request Modal ── */}
+      <BookingRequestModal
+        resource={selectedResource}
+        isOpen={isBookingModalOpen}
+        onClose={handleCloseBookingModal}
+        onSubmit={handleSubmitBooking}
+        isSubmitting={isSubmittingBooking}
       />
     </div>
   );

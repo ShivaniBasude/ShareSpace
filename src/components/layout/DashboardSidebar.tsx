@@ -41,6 +41,7 @@ const navigation: Record<UserRole, NavItem[]> = {
     { label: 'Resource Inventory', path: '/owner/resources', icon: <LayersIcon /> },
     { label: 'Booking Requests', path: '/owner/bookings', icon: <BookmarkIcon /> },
     { label: 'Active Loans', path: '/owner/loans', icon: <ClipboardListIcon /> },
+    { label: 'Verify Booking Pass', path: '/owner/verify-booking', icon: <QrCodeIcon /> },
     { label: 'Incidents', path: '/owner/incidents', icon: <AlertTriangleIcon /> },
     { label: 'Profile', path: '/owner/profile', icon: <UserIcon /> },
   ],

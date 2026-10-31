@@ -22,6 +22,7 @@ import {
 } from '../../components/resources';
 import {
   resourceService,
+  DEMO_OWNER_ID,
   type CreateResourceInput,
   type UpdateResourceInput,
 } from '../../features/resources';
@@ -29,6 +30,7 @@ import { useAuth } from '../../hooks';
 
 export const OwnerResourcesPage: React.FC = () => {
   const { profile } = useAuth();
+  const effectiveOwnerId = profile?.uid || DEMO_OWNER_ID;
 
   // Resources state
   const [resources, setResources] = useState<Resource[]>([]);
@@ -61,7 +63,7 @@ export const OwnerResourcesPage: React.FC = () => {
     setIsLoading(true);
     setError(null);
     try {
-      const data = await resourceService.getOwnerResources(undefined, 200);
+      const data = await resourceService.getOwnerResources(effectiveOwnerId, undefined, 200);
       setResources(data);
     } catch (err: unknown) {
       setError(
@@ -70,7 +72,7 @@ export const OwnerResourcesPage: React.FC = () => {
     } finally {
       setIsLoading(false);
     }
-  }, []);
+  }, [effectiveOwnerId]);
 
   // Initial load without synchronous setState in effect
   useEffect(() => {
@@ -78,7 +80,7 @@ export const OwnerResourcesPage: React.FC = () => {
 
     const fetchInitial = async () => {
       try {
-        const data = await resourceService.getOwnerResources(undefined, 200);
+        const data = await resourceService.getOwnerResources(effectiveOwnerId, undefined, 200);
         if (isMounted) {
           setResources(data);
         }
@@ -100,7 +102,7 @@ export const OwnerResourcesPage: React.FC = () => {
     return () => {
       isMounted = false;
     };
-  }, []);
+  }, [effectiveOwnerId]);
 
   // Combined client-side filtering
   const filteredResources = useMemo(() => {
