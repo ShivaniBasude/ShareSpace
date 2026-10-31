@@ -16,7 +16,7 @@ export const createResourceSchema = z
     location: z.string().trim().max(200).optional(),
     quantity: z.number().int().min(1).max(1000),
     condition: z.string().trim().max(200).optional(),
-    // JSON‑compatible specifications with size limit (~2 KB when stringified)
+    // JSON-compatible specifications with size limit (~2KB when stringified)
     specifications: z
       .custom<unknown>((val) => typeof val === 'object' && val !== null && JSON.stringify(val).length <= 2000, {
         message: 'Specifications must be a JSON object ≤ 2000 characters',

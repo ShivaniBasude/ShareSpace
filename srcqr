@@ -1,0 +1,10 @@
+[33m910a3f1[m[33m ([m[1;36mHEAD[m[33m -> [m[1;32mmain[m[33m, [m[1;31morigin/main[m[33m)[m Merge pull request #5 from ShivaniBasude/feat/fe-auth-dashboards
+[33mbbf8d98[m feat: implement student marketplace and Firebase emulator integration
+[33mdb58bb7[m Merge remote-tracking branch 'origin/main' into feat/fe-auth-dashboards
+[33m7bbd8e0[m Schema update Merge branch 'main' of https://github.com/ShivaniBasude/ShareSpace
+[33m5ed685b[m Schema update
+[33m838bfa2[m Merge pull request #4 from ShivaniBasude/feature/bookings
+[33m5034460[m[33m ([m[1;31morigin/feature/bookings[m[33m, [m[1;32mfeature/bookings[m[33m)[m Booking and approval management
+[33m5aed94e[m Merge pull request #3 from ShivaniBasude/feature/ResourceManagement
+[33m2e6442e[m[33m ([m[1;31morigin/feature/auth[m[33m, [m[1;32mfeature/auth[m[33m)[m Resource managementMerge branch 'main' of https://github.com/ShivaniBasude/ShareSpace into feature/auth
+[33md5115e4[m Resource management implementation

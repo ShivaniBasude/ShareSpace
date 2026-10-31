@@ -81,14 +81,38 @@ export interface Booking {
   userId: string;
   userDisplayName: string;
   userEmail: string;
+  ownerId?: string;
+  quantity?: number;
   startTime: TimestampField;
   endTime: TimestampField;
   purpose: string;
   status: BookingStatus;
   approvalId?: string;
+  remarks?: string;
+  rejectionReason?: string;
+  cancellationReason?: string;
+  inventoryReserved?: boolean;
   checkInTime?: TimestampField;
   checkOutTime?: TimestampField;
   institutionId: string;
+  createdAt: TimestampField;
+  updatedAt: TimestampField;
+}
+
+export type QRCodeStatus = 'active' | 'checked_in' | 'completed' | 'revoked' | 'expired';
+
+export interface QRCodeRecord {
+  id: string;
+  bookingId: string;
+  resourceId: string;
+  institutionId: string;
+  ownerId: string;
+  requesterId: string;
+  tokenHash: string;
+  status: QRCodeStatus;
+  expiresAt: TimestampField;
+  checkInTime?: TimestampField;
+  checkOutTime?: TimestampField;
   createdAt: TimestampField;
   updatedAt: TimestampField;
 }

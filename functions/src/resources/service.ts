@@ -23,7 +23,8 @@ export async function getUserProfile(uid: string) {
     throw new HttpsError('internal', 'User profile data is malformed.');
   }
   // Return the raw data; callers will use institutionId, role, etc.
-  return data as any;
+  return data as Record<string, unknown>;
+
 }
 
 /** Create a new resource document. */
@@ -46,7 +47,7 @@ export async function createResourceDoc(
   if (!data) {
     throw new HttpsError('internal', 'Failed to read created resource');
   }
-  return { id: ref.id, ...(data as any) } as Resource;
+  return { id: ref.id, ...(data as Record<string, unknown>) } as Resource;
 }
 
 /** Get a resource by ID. */
@@ -123,5 +124,5 @@ export async function searchResourcesQuery(
   filters?: Partial<Pick<Resource, 'category' | 'resourceType' | 'location'>>
 ) {
   // Reuse listResourcesQuery with extended filters
-  return listResourcesQuery(institutionId, limit, startAfterId, filters as any);
+  return listResourcesQuery(institutionId, limit, startAfterId, filters as Record<string, unknown>);
 }

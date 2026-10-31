@@ -10,11 +10,51 @@ export const createBookingSchema = z
     startTime: z.preprocess((arg) => (arg instanceof Date ? arg : new Date(arg as string)), z.date()),
     endTime: z.preprocess((arg) => (arg instanceof Date ? arg : new Date(arg as string)), z.date()),
     purpose: z.string().trim().min(1).max(2000),
-    // client must not set status or timestamps
   })
+  .strict()
   .refine((data) => data.endTime > data.startTime, {
     message: 'endTime must be after startTime',
     path: ['endTime'],
+  });
+
+export const getBookingInputSchema = z
+  .object({
+    bookingId: z.string().trim().min(1),
+  })
+  .strict();
+
+export const listBookingsInputSchema = z
+  .object({
+    limit: z.number().int().min(1).max(50).default(20),
+    startAfterId: z.string().trim().min(1).optional(),
+    status: z.enum(['pending', 'approved', 'rejected', 'cancelled', 'checked_in', 'completed'] as const).optional(),
+  })
+  .strict();
+
+export const approveBookingInputSchema = z
+  .object({
+    bookingId: z.string().trim().min(1),
+    remarks: z.string().trim().max(1000).optional(),
+  })
+  .strict();
+
+export const rejectBookingInputSchema = z
+  .object({
+    bookingId: z.string().trim().min(1),
+    reason: z.string().trim().min(1).max(1000),
+  })
+  .strict();
+
+export const cancelBookingInputSchema = z
+  .object({
+    bookingId: z.string().trim().min(1),
+    reason: z.string().trim().max(1000).optional(),
+  })
+  .strict();
+
+export const completeBookingInputSchema = z
+  .object({
+    bookingId: z.string().trim().min(1),
   })
   .strict();
 
@@ -24,15 +64,21 @@ export const firestoreBookingSchema = z.object({
   userId: z.string(),
   userDisplayName: z.string(),
   userEmail: z.string(),
-  startTime: z.any(), // Timestamp
-  endTime: z.any(),
+  ownerId: z.string().optional(),
+  quantity: z.number().int().min(1).optional(),
+  startTime: z.unknown(), // Timestamp
+  endTime: z.unknown(), // Timestamp
   purpose: z.string(),
-  status: z.enum(['pending', 'approved', 'rejected', 'cancelled', 'completed'] as const),
+  status: z.enum(['pending', 'approved', 'rejected', 'cancelled', 'checked_in', 'completed'] as const),
   approvalId: z.string().optional(),
-  checkInTime: z.any().optional(),
-  checkOutTime: z.any().optional(),
+  remarks: z.string().optional(),
+  rejectionReason: z.string().optional(),
+  cancellationReason: z.string().optional(),
+  inventoryReserved: z.boolean().optional(),
+  checkInTime: z.unknown().optional(),
+  checkOutTime: z.unknown().optional(),
   institutionId: z.string(),
-  createdAt: z.any(),
+  createdAt: z.unknown(),
   updatedAt: z.any(),
 });
 
@@ -53,15 +99,21 @@ export function docToBooking(doc: FirebaseFirestore.DocumentSnapshot): Booking {
     userId: data.userId,
     userDisplayName: data.userDisplayName,
     userEmail: data.userEmail,
-    startTime: data.startTime as any,
-    endTime: data.endTime as any,
+    ownerId: data.ownerId,
+    quantity: data.quantity ?? 1,
+    startTime: data.startTime as unknown,
+    endTime: data.endTime as unknown,
     purpose: data.purpose,
     status: data.status as BookingStatus,
     approvalId: data.approvalId,
-    checkInTime: data.checkInTime as any,
-    checkOutTime: data.checkOutTime as any,
+    remarks: data.remarks,
+    rejectionReason: data.rejectionReason,
+    cancellationReason: data.cancellationReason,
+    inventoryReserved: data.inventoryReserved ?? false,
+    checkInTime: data.checkInTime as unknown,
+    checkOutTime: data.checkOutTime as unknown,
     institutionId: data.institutionId,
-    createdAt: data.createdAt as any,
-    updatedAt: data.updatedAt as any,
+    createdAt: data.createdAt as unknown,
+    updatedAt: data.updatedAt as unknown,
   };
 }

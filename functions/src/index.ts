@@ -17,7 +17,16 @@ export * from './shared';
 // Phase 1 Authentication & User Management Callable Functions
 export * from './auth';
 
-// Domain modules (future phases)
+// Phase 2 Resource Management Callable Functions
+export * from './resources';
+
+// Phase 3 Booking & Approval Management Callable Functions
+export * from './bookings';
+
+// Phase 4 QR Code Management Callable Functions
+export * from './qr';
+
+// Domain modules (re-exported namespaces for compatibility)
 export * as resourceFunctions from './resources';
 export * as bookingFunctions from './bookings';
 export * as qrFunctions from './qr';

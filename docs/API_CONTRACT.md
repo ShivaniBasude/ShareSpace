@@ -165,141 +165,262 @@ All functions use Firebase `https.onCall` (Callable Functions), which provide au
 
 ---
 
-### Subsequent Phase Callable Placeholders (Phase 2+)
-
-### 1. `createBookingRequest`
-**Trigger Type**: `onCall`  
-**Purpose**: Creates a booking reservation after checking for slot collisions and user authorization.  
-**Caller Auth Requirement**: Authenticated user (`student` or `faculty`).
-
-- **Input Payload**:
-  ```typescript
-  {
-    resourceId: string;
-    startTime: string; // ISO 8601 string
-    endTime: string;   // ISO 8601 string
-    purpose: string;
-  }
-  ```
-- **Success Response**:
-  ```typescript
-  {
-    success: boolean;
-    bookingId: string;
-    status: 'approved' | 'pending';
-    message: string;
-  }
-  ```
-- **Error Codes**:
-  - `unauthenticated`: User is not signed in.
-  - `invalid-argument`: Start/End times are invalid or in the past.
-  - `already-exists`: Time slot collides with an existing booking.
-  - `permission-denied`: User role is not permitted to reserve this resource.
 
 ---
 
-### 2. `decideApproval`
-**Trigger Type**: `onCall`  
-**Purpose**: Approves or rejects a pending booking request.  
-**Caller Auth Requirement**: Authenticated `faculty` or `admin`.
+### Phase 3: Booking & Approval Management
 
-- **Input Payload**:
+#### 1. `createBooking`
+**Trigger Type**: `onCall`  
+**Purpose**: Creates a booking reservation and reserves inventory atomically via a Firestore transaction. If `approvalRequired` is true on the resource, status is set to `'pending'`; otherwise `'approved'`. In both cases, inventory is reserved immediately upon creation.  
+**Caller Auth Requirement**: Authenticated user with active status in the same institution.
+
+- **Request Input (`createBookingSchema`)**:
   ```typescript
   {
-    approvalId: string;
-    decision: 'approved' | 'rejected';
+    resourceId: string;
+    quantity: number;        // integer, min 1, max 1000
+    startTime: string | Date; // ISO 8601 string or Date
+    endTime: string | Date;   // Must be after startTime
+    purpose: string;         // 1-2000 chars
+  }
+  ```
+- **Response Payload**: `Booking` object.
+- **Error Codes**:
+  - `unauthenticated`: Caller is not logged in.
+  - `invalid-argument`: Invalid input format, endTime before startTime, etc.
+  - `not-found`: Resource or user profile does not exist.
+  - `permission-denied`: Caller belongs to a different institution or account disabled.
+  - `failed-precondition`: Resource unavailable or requested quantity exceeds available quantity.
+
+---
+
+#### 2. `getBooking`
+**Trigger Type**: `onCall`  
+**Purpose**: Retrieves details for a specific booking.  
+**Caller Auth Requirement**: Requester, resource owner, institution manager, or administrator.
+
+- **Request Input**:
+  ```typescript
+  {
+    bookingId: string;
+  }
+  ```
+- **Response Payload**: `Booking` object.
+- **Error Codes**:
+  - `unauthenticated`: Caller is not logged in.
+  - `not-found`: Booking does not exist.
+  - `permission-denied`: Caller is not authorized to inspect this booking.
+
+---
+
+#### 3. `listMyBookings`
+**Trigger Type**: `onCall`  
+**Purpose**: Lists paginated bookings requested by the authenticated caller.  
+**Caller Auth Requirement**: Authenticated active user.
+
+- **Request Input**:
+  ```typescript
+  {
+    limit?: number;        // default 20, max 50
+    startAfterId?: string; // document ID cursor
+    status?: BookingStatus;// optional filter
+  }
+  ```
+- **Response Payload**:
+  ```typescript
+  {
+    bookings: Booking[];
+    nextPageToken?: string;
+  }
+  ```
+
+---
+
+#### 4. `listOwnerBookingRequests`
+**Trigger Type**: `onCall`  
+**Purpose**: Lists incoming booking requests for resources owned by the caller (or all requests in institution for managers/admins).  
+**Caller Auth Requirement**: User with role `'owner'`, `'institution_manager'`, or `'admin'`.
+
+- **Request Input**:
+  ```typescript
+  {
+    limit?: number;        // default 20, max 50
+    startAfterId?: string; // document ID cursor
+    status?: BookingStatus;// optional filter
+  }
+  ```
+- **Response Payload**:
+  ```typescript
+  {
+    bookings: Booking[];
+    nextPageToken?: string;
+  }
+  ```
+
+---
+
+#### 5. `approveBooking`
+**Trigger Type**: `onCall`  
+**Purpose**: Transitions a booking from `'pending'` to `'approved'`. Inventory is already reserved at creation and is NOT decremented again.  
+**Caller Auth Requirement**: Resource owner, institution manager, or admin.
+
+- **Request Input**:
+  ```typescript
+  {
+    bookingId: string;
     remarks?: string;
   }
   ```
-- **Success Response**:
-  ```typescript
-  {
-    success: boolean;
-    bookingId: string;
-    decision: 'approved' | 'rejected';
-    updatedAt: string;
-  }
-  ```
+- **Response Payload**: Updated `Booking` object.
 - **Error Codes**:
-  - `unauthenticated`: Missing user auth token.
-  - `permission-denied`: Caller is neither faculty nor administrator.
-  - `not-found`: The specified approval record does not exist.
-  - `failed-precondition`: The approval has already been finalized.
+  - `failed-precondition`: Booking is not in `'pending'` status.
+  - `permission-denied`: Caller is not the owner/manager/admin.
 
 ---
 
-### 3. `verifyAndCheckIn`
+#### 6. `rejectBooking`
 **Trigger Type**: `onCall`  
-**Purpose**: Validates physical QR code scanning for on-site check-in.  
-**Caller Auth Requirement**: Authenticated user or `security` role.
+**Purpose**: Rejects a pending booking request and restores reserved inventory exactly once.  
+**Caller Auth Requirement**: Resource owner, institution manager, or admin.
 
-- **Input Payload**:
+- **Request Input**:
   ```typescript
   {
-    qrPayload: string;
-    resourceId: string;
-    timestamp: string;
+    bookingId: string;
+    reason: string;
   }
   ```
-- **Success Response**:
+- **Response Payload**: Updated `Booking` object.
+
+---
+
+#### 7. `cancelBooking`
+**Trigger Type**: `onCall`  
+**Purpose**: Cancels a pending or approved booking. Restores reserved inventory exactly once and invalidates any active QR code.  
+**Caller Auth Requirement**: Requester, resource owner, institution manager, or admin.
+
+- **Request Input**:
+  ```typescript
+  {
+    bookingId: string;
+    reason?: string;
+  }
+  ```
+- **Response Payload**: Updated `Booking` object.
+
+---
+
+#### 8. `completeBooking`
+**Trigger Type**: `onCall`  
+**Purpose**: Marks a booking completed directly (if not completed through QR checkout) and restores reserved inventory.  
+**Caller Auth Requirement**: Resource owner, institution manager, or admin.
+
+- **Request Input**:
+  ```typescript
+  {
+    bookingId: string;
+  }
+  ```
+- **Response Payload**: Updated `Booking` object.
+
+---
+
+### Phase 4: QR Code Management
+
+#### 1. `generateBookingQRCode`
+**Trigger Type**: `onCall`  
+**Purpose**: Generates a cryptographically secure 256-bit token for an approved booking, stores its SHA-256 hash in `qr_codes`, and returns a Data URL QR code image.  
+**Caller Auth Requirement**: Booking requester, resource owner, institution manager, or admin.
+
+- **Request Input**:
+  ```typescript
+  {
+    bookingId: string;
+  }
+  ```
+- **Response Payload**:
+  ```typescript
+  {
+    qrCodeId: string;
+    token: string;
+    qrCodeDataUrl: string;
+    expiresAt: string;
+  }
+  ```
+- **Error Codes**:
+  - `failed-precondition`: Booking status is not `'approved'`.
+  - `permission-denied`: Caller is not authorized.
+
+---
+
+#### 2. `verifyQRCode`
+**Trigger Type**: `onCall`  
+**Purpose**: Verifies token hash against Firestore, checking expiration, institution, and booking state without modifying database state.  
+**Caller Auth Requirement**: Authenticated user in the same institution.
+
+- **Request Input**:
+  ```typescript
+  {
+    token: string;
+  }
+  ```
+- **Response Payload**:
+  ```typescript
+  {
+    valid: boolean;
+    booking: Booking;
+    qrStatus: QRCodeStatus;
+    message: string;
+  }
+  ```
+
+---
+
+#### 3. `checkInWithQRCode`
+**Trigger Type**: `onCall`  
+**Purpose**: Scans student QR code on-site, transitioning booking from `'approved'` to `'checked_in'` and QR from `'active'` to `'checked_in'`. Does not revoke the token, allowing the same credential to be used for checkout.  
+**Caller Auth Requirement**: Resource owner, institution manager, or admin.
+
+- **Request Input**:
+  ```typescript
+  {
+    token: string;
+  }
+  ```
+- **Response Payload**:
   ```typescript
   {
     success: boolean;
-    bookingId: string;
-    checkedInAt: string;
+    booking: Booking;
     message: string;
   }
   ```
 - **Error Codes**:
-  - `invalid-argument`: QR token is expired, corrupted, or does not match resource.
-  - `permission-denied`: Caller is neither the booking owner nor security personnel.
-  - `failed-precondition`: Check-in window has not started yet or has expired.
+  - `already-exists`: Booking is already checked in.
+  - `failed-precondition`: Booking not approved or QR expired/revoked.
 
 ---
 
-### 4. `reportIncident`
+#### 4. `checkOutWithQRCode`
 **Trigger Type**: `onCall`  
-**Purpose**: Logs a damage or maintenance report for a resource and flags its status.  
-**Caller Auth Requirement**: Authenticated user.
+**Purpose**: Completes check-out using the verified QR token. Transitions booking from `'checked_in'` to `'completed'`, transitions QR to `'completed'`, and restores reserved inventory to the Resource.  
+**Caller Auth Requirement**: Resource owner, institution manager, or admin.
 
-- **Input Payload**:
+- **Request Input**:
   ```typescript
   {
-    resourceId?: string;
-    bookingId?: string;
-    title: string;
-    description: string;
-    severity: 'low' | 'medium' | 'high' | 'critical';
-    attachments?: string[];
+    token: string;
   }
   ```
-- **Success Response**:
+- **Response Payload**:
   ```typescript
   {
     success: boolean;
-    incidentId: string;
-    status: 'open';
-    createdAt: string;
+    booking: Booking;
+    message: string;
   }
   ```
 - **Error Codes**:
-  - `unauthenticated`: Caller is not authenticated.
-  - `invalid-argument`: Required fields missing or title too short.
-
----
-
-## Reactive Background Triggers (Event-Driven)
-
-These functions do not have an HTTP API endpoint; they trigger on backend database events:
-
-1. **`onBookingCreated`** (`firestore.onDocumentCreated('bookings/{bookingId}')`):
-   - Dispatches a confirmation notification to the user.
-   - If approval is required, creates an entry in `approvals` and notifies the designated approvers.
-   - Appends an entry into `audit_logs`.
-
-2. **`onBookingStatusUpdated`** (`firestore.onDocumentUpdated('bookings/{bookingId}')`):
-   - Notifies the requester when their booking transitions to `approved`, `rejected`, or `cancelled`.
-   - Records transition in `audit_logs`.
-
-3. **`onUserCreated`** (`auth.user().onCreate`):
-   - Seeds the default user document in `users/{uid}` with role `'student'`.
+  - `already-exists`: Booking has already completed checkout.
+  - `failed-precondition`: Booking or QR is not currently in `'checked_in'` state.

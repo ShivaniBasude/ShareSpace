@@ -3,10 +3,9 @@ import { getUserProfile } from './service';
 import { getResourceDoc, updateResourceDoc } from './service';
 import { updateResourceSchema } from './resource.model';
 import { docToResource } from './resource.model';
-import { Resource } from '../../../packages/shared/src/types';
 
 /** Callable function to update mutable fields of a resource. */
-export const updateResource = onCall<any, Resource>(async (request) => {
+export const updateResource = onCall(async (request) => {
   if (!request.auth) {
     throw new HttpsError('unauthenticated', 'Authentication required.');
   }
@@ -37,6 +36,6 @@ export const updateResource = onCall<any, Resource>(async (request) => {
   }
 
   // Proceed with update
-  const updatedSnap = await updateResourceDoc(resourceId, updates as any);
+  const updatedSnap = await updateResourceDoc(resourceId, updates);
   return docToResource(updatedSnap);
 });

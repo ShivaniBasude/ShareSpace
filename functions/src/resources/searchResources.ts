@@ -1,10 +1,9 @@
 import { onCall, HttpsError } from 'firebase-functions/v2/https';
 import { getUserProfile, searchResourcesQuery } from './service';
 import { docToResource } from './resource.model';
-import { Resource } from '../../../packages/shared/src/types';
 
 /** Callable function to search resources with optional filters. */
-export const searchResources = onCall<any, { resources: Resource[]; nextPageToken?: string }>(
+export const searchResources = onCall(
   async (request) => {
     if (!request.auth) {
       throw new HttpsError('unauthenticated', 'Authentication required.');
@@ -23,7 +22,7 @@ export const searchResources = onCall<any, { resources: Resource[]; nextPageToke
 
     const numericLimit = typeof limit === 'number' && limit > 0 && limit <= 50 ? limit : 20;
 
-    const filters: any = {};
+    const filters: Record<string, unknown> = {};
     if (category) filters.category = category;
     if (resourceType) filters.resourceType = resourceType;
     if (location) filters.location = location;
