@@ -52,25 +52,60 @@ export interface UpdateMyProfileResponse {
   message: string;
 }
 
-export type ResourceCategory = 'room' | 'lab' | 'equipment' | 'hall' | 'vehicle';
-export type ResourceStatus = 'available' | 'maintenance' | 'reserved' | 'decommissioned';
+// ---------- Resource Management Types (Phase 2) ----------
+export enum ResourceCategory {
+  Electronics = "Electronics",
+  Laboratory = "Laboratory Equipment",
+  Sports = "Sports Equipment",
+  Books = "Books and Study Materials",
+  Creative = "Creative Equipment",
+  Rooms = "Rooms and Spaces",
+  Other = "Other"
+}
 
+/** Availability status of a resource */
+export type ResourceAvailabilityStatus = "available" | "unavailable" | "reserved";
+
+/** Canonical Resource model stored in Firestore */
 export interface Resource {
+  /** Auto‑generated document ID */
   id: string;
-  name: string;
-  category: ResourceCategory;
-  capacity?: number;
-  location: string;
+  /** Human‑readable title */
+  title: string;
+  /** Detailed description (markdown / plain text) */
   description: string;
-  images: string[];
-  status: ResourceStatus;
-  requiresApproval: boolean;
-  amenities: string[];
-  qrCodeUrl?: string;
+  /** Category of the resource */
+  category: ResourceCategory;
+  /** Custom resource type, e.g. "laptop", "microscope" */
+  resourceType: string;
+  /** Institution that owns the resource */
   institutionId: string;
+  /** UID of the user who created / owns the resource */
+  ownerId: string;
+  /** Optional physical location description */
+  location?: string;
+  /** Total quantity owned */
+  quantity: number;
+  /** How many are currently available */
+  availableQuantity: number;
+  /** Optional condition description */
+  condition?: string;
+  /** URLs of stored images */
+  images?: string[];
+  /** Arbitrary key/value specifications */
+  specifications?: Record<string, unknown>;
+  /** Eligibility requirements for borrowing */
+  eligibilityRequirements?: string[];
+  /** Availability state */
+  availabilityStatus: ResourceAvailabilityStatus;
+  /** Whether borrowing requires manager approval */
+  approvalRequired: boolean;
+  /** Server‑timestamp when created */
   createdAt: TimestampField;
+  /** Server‑timestamp when last updated */
   updatedAt: TimestampField;
 }
+
 
 export type BookingStatus = 'pending' | 'approved' | 'rejected' | 'cancelled' | 'checked_in' | 'completed';
 
