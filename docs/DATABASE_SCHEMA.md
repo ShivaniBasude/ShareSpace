@@ -10,16 +10,23 @@ ShareSpace uses Google Cloud Firestore in Datastore/Native Mode. All documents f
 ### 1. `users`
 Represents registered users in the platform. Synced upon authentication creation.
 - **Document ID**: `uid` (Matches Firebase Auth UID)
-- **Planned Fields**:
+- **Canonical Fields**:
   - `uid` (`string`): Firebase Auth unique user identifier.
-  - `email` (`string`): Institutional or personal email.
-  - `displayName` (`string`): Full name.
-  - `role` (`string`): `'student' | 'faculty' | 'admin' | 'security'`.
-  - `department` (`string`, optional): Department or unit name.
-  - `phoneNumber` (`string`, optional): Contact number.
-  - `photoURL` (`string`, optional): Avatar URL.
-  - `createdAt` (`timestamp` / `ISO string`): Record creation timestamp.
-  - `updatedAt` (`timestamp` / `ISO string`): Last update timestamp.
+  - `fullName` (`string`): User's legal or preferred full name (min 2 characters).
+  - `email` (`string`): Institutional or verified email address.
+  - `role` (`string`): Role enumeration (`'student' | 'owner' | 'institution_manager' | 'admin'`). Default is `'student'`. Modifiable only via trusted Admin SDK operations.
+  - `institutionId` (`string`): Institutional identifier defining data isolation boundaries.
+  - `department` (`string`, optional): Department, school, or organizational unit.
+  - `phoneNumber` (`string`, optional): Contact telephone number.
+  - `profileImageUrl` (`string`, optional): Cloud Storage or avatar image URL.
+  - `accountStatus` (`string`): Account active state (`'active' | 'disabled'`). Defaults to `'active'`.
+  - `createdAt` (`timestamp`): Authoritative server timestamp set via `FieldValue.serverTimestamp()`.
+  - `updatedAt` (`timestamp`): Authoritative server timestamp updated on modification via `FieldValue.serverTimestamp()`.
+- **Security & Mutation Boundaries**:
+  - Direct client creation or deletion is disallowed.
+  - Creation is handled exclusively by Cloud Function `completeUserRegistration`.
+  - Client updates are restricted to permitted profile fields (`fullName`, `department`, `phoneNumber`, `profileImageUrl`, `updatedAt`).
+  - Roles, account status, institution ID, and creation timestamps cannot be modified directly by clients.
 
 ### 2. `resources`
 Represents bookable physical or digital assets (rooms, labs, equipment, conference halls, vehicles).

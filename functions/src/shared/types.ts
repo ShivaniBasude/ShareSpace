@@ -1,18 +1,56 @@
-// Shared TypeScript interfaces for Cloud Functions backend
-// Keep synchronized with src/types/index.ts
+// Canonical Shared Domain Models & Types for ShareSpace (functions copy)
+// Keep synchronized with packages/shared/src/types.ts
 
-export type UserRole = 'student' | 'faculty' | 'admin' | 'security';
+export type UserRole = 'student' | 'owner' | 'institution_manager' | 'admin';
+
+export type AccountStatus = 'active' | 'disabled';
+
+export type TimestampField = string | { seconds: number; nanoseconds: number } | unknown;
 
 export interface UserProfile {
   uid: string;
+  fullName: string;
   email: string;
-  displayName: string;
   role: UserRole;
+  institutionId: string;
   department?: string;
   phoneNumber?: string;
-  photoURL?: string;
-  createdAt: string;
-  updatedAt: string;
+  profileImageUrl?: string;
+  accountStatus: AccountStatus;
+  createdAt: TimestampField;
+  updatedAt: TimestampField;
+}
+
+// Request and Response contracts for Authentication & User Management
+export interface CompleteUserRegistrationInput {
+  fullName: string;
+  institutionId: string;
+  department?: string;
+  phoneNumber?: string;
+  profileImageUrl?: string;
+}
+
+export interface CompleteUserRegistrationResponse {
+  success: boolean;
+  profile: UserProfile;
+  message: string;
+}
+
+export interface GetMyProfileResponse {
+  profile: UserProfile;
+}
+
+export interface UpdateMyProfileInput {
+  fullName?: string;
+  department?: string;
+  phoneNumber?: string;
+  profileImageUrl?: string;
+}
+
+export interface UpdateMyProfileResponse {
+  success: boolean;
+  profile: UserProfile;
+  message: string;
 }
 
 export type ResourceCategory = 'room' | 'lab' | 'equipment' | 'hall' | 'vehicle';
@@ -30,8 +68,9 @@ export interface Resource {
   requiresApproval: boolean;
   amenities: string[];
   qrCodeUrl?: string;
-  createdAt: string;
-  updatedAt: string;
+  institutionId: string;
+  createdAt: TimestampField;
+  updatedAt: TimestampField;
 }
 
 export type BookingStatus = 'pending' | 'approved' | 'rejected' | 'cancelled' | 'checked_in' | 'completed';
@@ -42,15 +81,16 @@ export interface Booking {
   userId: string;
   userDisplayName: string;
   userEmail: string;
-  startTime: string;
-  endTime: string;
+  startTime: TimestampField;
+  endTime: TimestampField;
   purpose: string;
   status: BookingStatus;
   approvalId?: string;
-  checkInTime?: string;
-  checkOutTime?: string;
-  createdAt: string;
-  updatedAt: string;
+  checkInTime?: TimestampField;
+  checkOutTime?: TimestampField;
+  institutionId: string;
+  createdAt: TimestampField;
+  updatedAt: TimestampField;
 }
 
 export type ApprovalStatus = 'pending' | 'approved' | 'rejected';
@@ -63,8 +103,9 @@ export interface Approval {
   approverId?: string;
   status: ApprovalStatus;
   remarks?: string;
-  decidedAt?: string;
-  createdAt: string;
+  decidedAt?: TimestampField;
+  institutionId: string;
+  createdAt: TimestampField;
 }
 
 export type IncidentSeverity = 'low' | 'medium' | 'high' | 'critical';
@@ -80,8 +121,9 @@ export interface Incident {
   severity: IncidentSeverity;
   status: IncidentStatus;
   attachments?: string[];
-  createdAt: string;
-  updatedAt: string;
+  institutionId: string;
+  createdAt: TimestampField;
+  updatedAt: TimestampField;
 }
 
 export interface NotificationItem {
@@ -92,7 +134,7 @@ export interface NotificationItem {
   read: boolean;
   type: 'booking' | 'approval' | 'incident' | 'system';
   linkUrl?: string;
-  createdAt: string;
+  createdAt: TimestampField;
 }
 
 export interface AuditLog {
@@ -101,6 +143,7 @@ export interface AuditLog {
   performedBy: string;
   targetCollection: string;
   targetId: string;
+  institutionId?: string;
   metadata?: Record<string, unknown>;
-  timestamp: string;
+  timestamp: TimestampField;
 }
