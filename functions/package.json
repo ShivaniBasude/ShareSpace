@@ -21,7 +21,7 @@
   },
   "devDependencies": {
     "typescript": "^5.7.3",
-    "@types/node": "^20.17.19",
+    "zod": "^3.23.8",
     "firebase-functions-test": "^3.4.0"
   },
   "private": true
