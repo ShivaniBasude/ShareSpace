@@ -23,7 +23,7 @@ function resolveToneFromStatus(status?: string): BadgeTone {
   const s = status.toLowerCase();
   if (['available', 'approved', 'completed', 'student'].includes(s)) return 'emerald';
   if (['pending', 'reserved', 'investigating'].includes(s)) return 'amber';
-  if (['maintenance', 'rejected', 'cancelled', 'decommissioned', 'critical', 'high'].includes(s)) return 'rose';
+  if (['maintenance', 'rejected', 'cancelled', 'decommissioned', 'critical', 'high', 'unavailable'].includes(s)) return 'rose';
   if (['admin', 'faculty', 'hall', 'lab'].includes(s)) return 'indigo';
   if (['checked_in', 'security', 'equipment'].includes(s)) return 'sky';
   return 'slate';
@@ -49,4 +49,3 @@ export const Badge: React.FC<BadgeProps> = ({
     </span>
   );
 };
-

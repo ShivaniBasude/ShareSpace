@@ -53,15 +53,18 @@ export interface UpdateMyProfileResponse {
 }
 
 // ---------- Resource Management Types (Phase 2) ----------
-export enum ResourceCategory {
-  Electronics = "Electronics",
-  Laboratory = "Laboratory Equipment",
-  Sports = "Sports Equipment",
-  Books = "Books and Study Materials",
-  Creative = "Creative Equipment",
-  Rooms = "Rooms and Spaces",
-  Other = "Other"
-}
+export const ResourceCategory = {
+  Electronics: "Electronics",
+  Laboratory: "Laboratory Equipment",
+  Sports: "Sports Equipment",
+  Books: "Books and Study Materials",
+  Creative: "Creative Equipment",
+  Rooms: "Rooms and Spaces",
+  Other: "Other",
+} as const;
+
+export type ResourceCategory =
+  (typeof ResourceCategory)[keyof typeof ResourceCategory];
 
 /** Availability status of a resource */
 export type ResourceAvailabilityStatus = "available" | "unavailable" | "reserved";
